@@ -1,0 +1,15 @@
+{
+  "name": "Quick Theme Toggler",
+  "description": "A fully customizable quick toggle buttons directly in panel to toggle theme.",
+  "uuid": "quick-theme-toggler@chiteshmalhotra",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "50"
+  ],
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.quick-theme-toggler",
+  "url": "https://github.com/chiteshmalhotra/quick-theme-toggler"
+}
