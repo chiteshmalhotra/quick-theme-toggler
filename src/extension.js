@@ -15,25 +15,33 @@ const QuickThemeButton = GObject.registerClass(
             super._init(0.0, extension.metadata.name, false);
             this._extension = extension;
 
-            // 1. Initialize data structures first
-            this.changedIds = new Map();
-            this.darkIcon = 'weather-clear-symbolic';
-            this.lightIcon = 'weather-clear-night-symbolic';
+            // Data structures
+            this.iconSets = [
+                { light: "weather-clear-symbolic", dark: "weather-clear-night-symbolic", rotate: 40 },
+                { light: "dark-mode-symbolic", dark: "dark-mode-symbolic", rotate: 180 }
+            ];
 
-            // 2. Settings setup
+            // Settings setup
             this._settings = this._extension.getSettings();
             this._interfaceSettings = new Gio.Settings({ schema_id: "org.gnome.desktop.interface" });
 
-            // 3. Theme connection
+            // Theme connection
             this.isDark = (this._interfaceSettings.get_string('color-scheme') === 'prefer-dark');
             this._interfaceId = this._interfaceSettings.connect('changed::color-scheme', () => {
                 this.isDark = (this._interfaceSettings.get_string('color-scheme') === 'prefer-dark');
-                this._icon.icon_name = (this.isDark ? this.darkIcon : this.lightIcon);
+                this._icon.icon_name = this.getActiveIcon();
                 this.animateIcon();
             });
-            this.changedIds.set(this._interfaceSettings, this._interfaceId);
 
-            // 4. Component setup
+            // Init settings
+            this.iconSet = this._settings.get_int("icon-set");
+            this.iconMov = this._settings.get_boolean("icon-mov");
+            this.iconDur = this._settings.get_int("icon-dur");
+            this.iconBox = ["left", "center", "right"][this._settings.get_int("icon-box-enum")] ?? "right";
+            this.iconOffset = this._settings.get_int("icon-offset");
+            this.forceLight = this._settings.get_boolean("force-light");
+
+            // Component setup
             this.setupIcon();
             this.setupMenu();
             this.setupEvents();
@@ -41,28 +49,37 @@ const QuickThemeButton = GObject.registerClass(
             this.setupSettings();
         }
 
-        toggleTheme() {
-            this._interfaceSettings.set_string('color-scheme', this.isDark ? 'default' : 'prefer-dark');
-        }
-
         setupIcon() {
             this._icon = new St.Icon({
-                icon_name: (this.isDark ? this.darkIcon : this.lightIcon),
-                style_class: 'system-status-icon theme-icon',
-                reactive: true
+                icon_name: this.getActiveIcon(),
+                style_class: "system-status-icon"
             });
+            this._icon.set_pivot_point(0.5, 0.5);
             this.add_child(this._icon);
         }
 
         animateIcon() {
-            this._icon.set_pivot_point(0.5, 0.5);
+            if (!this.iconMov) return;
 
-            this._icon.rotation_angle_z = (this.isDark ? -40 : 40);
+            const iconSets = this.iconSets[this.iconSet] ?? this.iconSets[0];
+            const iconRotate = (this.isDark ? -1 : 1) * iconSets.rotate;
+
+            this._icon.rotation_angle_z = iconRotate;
             this._icon.ease({
                 rotation_angle_z: 0,
-                duration: 300,
+                duration: this.iconDur,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD
             });
+        }
+
+        getActiveIcon() {
+            const iconSets = (this.iconSets[this.iconSet] ?? this.iconSets[0]);
+            return this.isDark ? iconSets.dark : iconSets.light;
+        }
+
+        setupMenu() {
+            this.menu.addAction(_(" Extension Settings"), () => 
+            this._extension.openPreferences(), "preferences-system-symbolic");
         }
 
         setupEvents() {
@@ -78,48 +95,70 @@ const QuickThemeButton = GObject.registerClass(
             });
         }
 
-        setupMenu() {
-            this.menu.addAction(_('Preferences'), () => {
-                this._extension.openPreferences();
-            });
+        setupShortcut() {
+            Main.wm.addKeybinding(
+                'shortcut',
+                this._settings,
+                Meta.KeyBindingFlags.NONE,
+                Shell.ActionMode.ALL,
+                () => { this.toggleTheme(); }
+            );
         }
 
         setupSettings() {
             // Show Indicator
             this._settings.bind('show-indicator', this, 'visible', Gio.SettingsBindFlags.DEFAULT);
 
-            // Shortcut 
-            this._shortcutId = this._settings.connect('changed::shortcut', () => this.setupShortcut());
-            this.changedIds.set(this._settings, this._shortcutId);
+            // Icon Set
+            this._iconSetId = this._settings.connect("changed::icon-set", () => {
+                this.iconSet = this._settings.get_int("icon-set");
+                this._icon.icon_name = this.getActiveIcon();
+            });
+
+            // Icon Animation
+            this._iconMovId = this._settings.connect("changed::icon-mov", () => {
+                this.iconMov = this._settings.get_boolean("icon-mov");
+            });
+
+            // Icon Dur
+            this._iconDurId = this._settings.connect("changed::icon-dur", () => {
+                this.iconDur = this._settings.get_int("icon-dur");
+            });
+
+            // Icon Box
+            this._iconBoxEnumId = this._settings.connect("changed::icon-box-enum", () => {
+                const boxEnum = this._settings.get_int("icon-box-enum");
+                this.iconBox = ["left", "center", "right"][boxEnum] ?? "right";
+                this._extension.reload();
+            });
+
+            // Icon Offset
+            this._iconOffsetId = this._settings.connect("changed::icon-offset", () => {
+                this.iconOffset = this._settings.get_int("icon-offset");
+                this._extension.reload();
+            });
+
+            // Force Light
+            this._forceLightId = this._settings.connect("changed::force-light", () => {
+                this.forceLight = this._settings.get_boolean("force-light");
+            });
         }
 
-        setupShortcut() {
-            // Remove any previous shortcut if exists
-            Main.wm.removeKeybinding('shortcut');
-
-            // Add current shortcut
-            Main.wm.addKeybinding(
-                'shortcut',
-                this._settings,
-                0,
-                Shell.ActionMode.ALL,
-                () => { this.toggleTheme() }
-            );
+        toggleTheme() {
+            const defaultScheme = this.forceLight ? "prefer-light" : "default";
+            const targetScheme = this.isDark ? defaultScheme : "prefer-dark";
+            this._interfaceSettings.set_string("color-scheme", targetScheme);
         }
 
         destroy() {
-            // Disconnect signals from tracked settings objects
-            this.changedIds.forEach((signalId, settingsObj) => {
-                if (settingsObj && signalId) {
-                    settingsObj.disconnect(signalId);
-                }
-            });
-            this.changedIds.clear();
+            Object.entries({
+                _iconSetId: this._settings, _iconMovId: this._settings, _iconDurId: this._settings,
+                _iconBoxEnumId: this._settings, _iconOffsetId: this._settings, _forceLightId: this._settings,
+                _buttonPressEventId: this, _interfaceId: this._interfaceSettings
+            }).forEach(([k, src]) => this[k] && src.disconnect(this[k]));
 
-            // Remove keybind
             Main.wm.removeKeybinding("shortcut");
 
-            // Destroy
             this._interfaceSettings = null;
             this._settings = null;
             super.destroy();
@@ -131,11 +170,16 @@ export default class QuickThemetogglerExtension extends Extension {
 
     enable() {
         this._indicator = new QuickThemeButton(this);
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        Main.panel.addToStatusArea(this.uuid, this._indicator, this._indicator.iconOffset, this._indicator.iconBox);
     }
 
     disable() {
         this._indicator?.destroy();
         this._indicator = null;
+    }
+
+    reload() {
+        this.disable();
+        this.enable();
     }
 }

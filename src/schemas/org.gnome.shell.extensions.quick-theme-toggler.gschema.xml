@@ -1,16 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.quick-theme-toggler" path="/org/gnome/shell/extensions/quick-theme-toggler/">
-    
-    <key name="show-indicator" type="b">
-      <default>true</default>
-      <summary>Show panel indicator</summary>
-    </key>
-    
-    <key name="shortcut" type="as">
-      <default>['&lt;Super&gt;&lt;Shift&gt;t']</default>
-      <summary>Toggle shortcut</summary>
-      <description>Shortcut to trigger the extension.</description>
-    </key>
-  </schema>
+	<schema id="org.gnome.shell.extensions.quick-theme-toggler" path="/org/gnome/shell/extensions/quick-theme-toggler/">
+		<!-- Appearance -->
+		<key name="show-indicator" type="b">
+			<default>true</default>
+			<summary>Show panel indicator</summary>
+		</key>
+		<key name="icon-set" type="i">
+			<default>0</default>
+			<summary>Icon Set</summary>
+		</key>
+		<key name="icon-mov" type="b">
+			<default>true</default>
+			<summary>Animate Icon</summary>
+		</key>
+		<key name="icon-dur" type="i">
+			<default>300</default>
+			<range min="0" max="1000"/>
+			<summary>Icon Animation Duration</summary>
+		</key>
+		<key name="icon-box-enum" type="i">
+			<default>2</default>
+			<summary>position</summary>
+		</key>
+		<key name="icon-offset" type="i">
+			<default>1</default>
+			<range min="0" max="16"/>
+			<summary>Icon </summary>
+		</key>
+		<!-- Behaviour -->
+		<key name="shortcut" type="as">
+			<default>['&lt;Super&gt;&lt;Shift&gt;t']</default>
+			<summary>Toggle shortcut</summary>
+		</key>
+        <key name="force-light" type="b">
+            <default>false</default>
+            <summary>Force Light</summary>
+        </key>
+	</schema>
 </schemalist>
