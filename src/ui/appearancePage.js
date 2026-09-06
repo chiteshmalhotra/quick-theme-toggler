@@ -26,16 +26,16 @@ export function appearancePage(window) {
     displayGroup.add(showIndicatorRow);
     settings.bind('show-indicator', showIndicatorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
-    // Icon Set
-    const iconSetModel = Gtk.StringList.new([_('Moon and Sun'), _('Half Circle')]);
+    // Icon Style
+    const iconStyleModel = Gtk.StringList.new([_('Moon and Sun'), _('Half Circle')]);
 
-    const iconSetRow = new Adw.ComboRow({
-        title: _('Icon Set'),
+    const iconStyleRow = new Adw.ComboRow({
+        title: _('Icon Style'),
         subtitle: _('Choose the visual design for the panel icon'),
-        model: iconSetModel,
+        model: iconStyleModel,
     });
-    displayGroup.add(iconSetRow);
-    settings.bind('icon-set', iconSetRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+    displayGroup.add(iconStyleRow);
+    settings.bind('icon-style', iconStyleRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
 
     // Group: Animation
     const animationGroup = new Adw.PreferencesGroup({
@@ -43,24 +43,24 @@ export function appearancePage(window) {
     });
     appearancePage.add(animationGroup);
 
-    // Icon Animation
+    // Animate Icon
     const iconAnimationRow = new Adw.SwitchRow({
-        title: _('Icon Animation'),
+        title: _('Animate Icon'),
         subtitle: _('Enable smooth animation for icon state changes'),
     });
     animationGroup.add(iconAnimationRow);
-    settings.bind('icon-mov', iconAnimationRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+    settings.bind('animate-icon', iconAnimationRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
     // Animation Duration
-    const iconDurAdj = new Gtk.Adjustment({ lower: 50, upper: 2000, step_increment: 50 });
-    const iconDurationRow = new Adw.SpinRow({
-        title: _('Transition Duration'),
-        subtitle: _('Duration of the animation in milliseconds'),
-        adjustment: iconDurAdj,
+    const iconAnimateDurAdj = new Gtk.Adjustment({ lower: 0, upper: 3000, step_increment: 100 });
+    const iconAnimateDurationRow = new Adw.SpinRow({
+        title: _('Animation Speed'),
+        subtitle: _('Set transition duration in milliseconds'),
+        adjustment: iconAnimateDurAdj,
         numeric: true,
     });
-    animationGroup.add(iconDurationRow);
-    settings.bind('icon-dur', iconDurationRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+    animationGroup.add(iconAnimateDurationRow);
+    settings.bind('animation-speed', iconAnimateDurationRow, 'value', Gio.SettingsBindFlags.DEFAULT);
 
     // Group: Position
     const positionGroup = new Adw.PreferencesGroup({
@@ -80,7 +80,7 @@ export function appearancePage(window) {
     settings.bind('icon-box-enum', iconPositionRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
 
     // Position Offset
-    const offsetAdjustment = new Gtk.Adjustment({ lower: -100, upper: 100, step_increment: 1 });
+    const offsetAdjustment = new Gtk.Adjustment({ lower: 0, upper: 16, step_increment: 1 });
 
     const iconOffsetRow = new Adw.SpinRow({
         title: _('Position Offset'),

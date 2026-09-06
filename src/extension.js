@@ -16,11 +16,17 @@ const QuickThemeButton = GObject.registerClass(
             this._extension = extension;
 
             // Data structures
+            this._signals = [];
             this.clickActions = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
-            this.iconSets = [
+            this.iconStyles = [
                 { light: "weather-clear-symbolic", dark: "weather-clear-night-symbolic", rotate: 40 },
                 { light: "dark-mode-symbolic", dark: "dark-mode-symbolic", rotate: 180 }
             ];
+            this.settingsMap = {
+                'icon-style': { reload: true }, 'animate-icon': { type: 'boolean' }, 'animation-speed': {},
+                'icon-box-enum': { reload: true }, 'icon-offset': { reload: true },
+                'force-light': { type: 'boolean' }, 'left-click': {}, 'right-click': {},
+            };
 
             // Settings setup
             this._settings = this._extension.getSettings();
@@ -28,28 +34,19 @@ const QuickThemeButton = GObject.registerClass(
 
             // Theme connection
             this.isDark = (this._interfaceSettings.get_string('color-scheme') === 'prefer-dark');
-            this._interfaceId = this._interfaceSettings.connect('changed::color-scheme', () => {
+            const interfaceId = this._interfaceSettings.connect('changed::color-scheme', () => {
                 this.isDark = (this._interfaceSettings.get_string('color-scheme') === 'prefer-dark');
                 this._icon.icon_name = this.getActiveIcon();
-                this.animateIcon();
+                this.iconAnimaticon();
             });
+            this._signals.push({ source: this._interfaceSettings, id: interfaceId });
 
-            // Init settings
-            this.iconSet = this._settings.get_int("icon-set");
-            this.iconMov = this._settings.get_boolean("icon-mov");
-            this.iconDur = this._settings.get_int("icon-dur");
-            this.iconBox = ["left", "center", "right"][this._settings.get_int("icon-box-enum")] ?? "right";
-            this.iconOffset = this._settings.get_int("icon-offset");
-            this.forceLight = this._settings.get_boolean("force-light");
-            this.leftClick = this._settings.get_int("left-click");
-            this.rightClick = this._settings.get_int("right-click");
-
-            // Component setup
+            // Setups
+            this.setupSettings();
             this.setupIcon();
             this.setupMenu();
             this.setupEvents();
             this.setupShortcut();
-            this.setupSettings();
         }
 
         setupIcon() {
@@ -61,24 +58,21 @@ const QuickThemeButton = GObject.registerClass(
             this.add_child(this._icon);
         }
 
-        animateIcon() {
-            if (!this.iconMov) return;
+        iconAnimaticon() {
+            if (!this.animateIcon) return;
 
-            const iconSets = this.iconSets[this.iconSet] ?? this.iconSets[0];
-            const iconRotate = (this.isDark ? -1 : 1) * iconSets.rotate;
+            const iconStyles = this.iconStyles[this.iconStyle] ?? this.iconStyles[0];
+            const iconRotate = (this.isDark ? -1 : 1) * iconStyles.rotate;
 
             this._icon.rotation_angle_z = iconRotate;
             this._icon.ease({
                 rotation_angle_z: 0,
-                duration: this.iconDur,
+                duration: this.animationSpeed,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD
             });
         }
 
-        getActiveIcon() {
-            const iconSets = (this.iconSets[this.iconSet] ?? this.iconSets[0]);
-            return this.isDark ? iconSets.dark : iconSets.light;
-        }
+        getActiveIcon() { return this.iconStyles.at(this.iconStyle)[this.isDark ? 'dark' : 'light'] }
 
         setupMenu() {
             this.menu.addAction(_(" Extension Settings"), () =>
@@ -88,7 +82,7 @@ const QuickThemeButton = GObject.registerClass(
         setupEvents() {
             this._clickGesture?.set_enabled(false);
 
-            this._buttonPressEventId = this.connect("button-press-event", (actor, event) => {
+            const eventId = this.connect("button-press-event", (actor, event) => {
                 let button = event.get_button();
 
                 if (button === 1) this.clickActions[this.leftClick]();
@@ -96,7 +90,9 @@ const QuickThemeButton = GObject.registerClass(
 
                 return [1, 3].includes(button) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
             });
+            this._signals.push({ source: this, id: eventId });
         }
+
         setupShortcut() {
             Main.wm.addKeybinding(
                 'shortcut',
@@ -111,50 +107,23 @@ const QuickThemeButton = GObject.registerClass(
             // Show Indicator
             this._settings.bind('show-indicator', this, 'visible', Gio.SettingsBindFlags.DEFAULT);
 
-            // Icon Set
-            this._iconSetId = this._settings.connect("changed::icon-set", () => {
-                this.iconSet = this._settings.get_int("icon-set");
-                this._icon.icon_name = this.getActiveIcon();
-            });
+            // Setting map
+            for (const [key, config] of Object.entries(this.settingsMap)) {
+                const getter = config.type === 'boolean' ? 'get_boolean' : 'get_int';
+                
+                const propName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase()); // Ex 'icon-style' -> 'iconStyle'
 
-            // Icon Animation
-            this._iconMovId = this._settings.connect("changed::icon-mov", () => {
-                this.iconMov = this._settings.get_boolean("icon-mov");
-            });
+                this[propName] = this._settings[getter](key);
 
-            // Icon Dur
-            this._iconDurId = this._settings.connect("changed::icon-dur", () => {
-                this.iconDur = this._settings.get_int("icon-dur");
-            });
-
-            // Icon Box
-            this._iconBoxEnumId = this._settings.connect("changed::icon-box-enum", () => {
-                const boxEnum = this._settings.get_int("icon-box-enum");
-                this.iconBox = ["left", "center", "right"][boxEnum] ?? "right";
-                this._extension.reload();
-            });
-
-            // Icon Offset
-            this._iconOffsetId = this._settings.connect("changed::icon-offset", () => {
-                this.iconOffset = this._settings.get_int("icon-offset");
-                this._extension.reload();
-            });
-
-            // Force Light
-            this._forceLightId = this._settings.connect("changed::force-light", () => {
-                this.forceLight = this._settings.get_boolean("force-light");
-            });
-
-            // Left click
-            this._leftClickId = this._settings.connect("changed::left-click", () => {
-                this.leftClick = this._settings.get_int("left-click");
-            });
-
-            // Right click
-            this._rightClickId = this._settings.connect("changed::right-click", () => {
-                this.rightClick = this._settings.get_int("right-click");
-            });
+                const id = this._settings.connect(`changed::${key}`, () => {
+                    this[propName] = this._settings[getter](key);
+                    if (config.reload) this._extension.reload();
+                });
+                this._signals.push({ source: this._settings, id });
+            }
         }
+
+        get iconBox() { return ['left', 'center', 'right'].at(this.iconBoxEnum) ?? 'right' }
 
         toggleTheme() {
             const defaultScheme = this.forceLight ? "prefer-light" : "default";
@@ -163,14 +132,14 @@ const QuickThemeButton = GObject.registerClass(
         }
 
         destroy() {
-            Object.entries({
-                _iconSetId: this._settings, _iconMovId: this._settings, _iconDurId: this._settings,
-                _iconBoxEnumId: this._settings, _iconOffsetId: this._settings, _forceLightId: this._settings,
-                _leftClickId: this._settings, _rightClickId: this._settings,
-                _buttonPressEventId: this, _interfaceId: this._interfaceSettings
-            }).forEach(([k, src]) => this[k] && src.disconnect(this[k]));
+            // Disconnect all tracked signals safely
+            for (const { source, id } of this._signals) {
+                if (source && id) source.disconnect(id)
+            }
+            this._signals = [];
 
-            Main.wm.removeKeybinding("shortcut");
+            // Remove desktop shortcut binding
+            Main.wm?.removeKeybinding("shortcut");
 
             this._interfaceSettings = null;
             this._settings = null;
