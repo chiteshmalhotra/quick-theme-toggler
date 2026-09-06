@@ -12,16 +12,16 @@ export function behaviourPage(window) {
         icon_name: 'preferences-other-symbolic',
     });
 
-    // Group: Shortcut
-    const shortcutGroup = new Adw.PreferencesGroup({ title: _('Shortcut') });
-    behaviourPage.add(shortcutGroup);
+    // Group: actions
+    const actionGroup = new Adw.PreferencesGroup({ title: _('Actions') });
+    behaviourPage.add(actionGroup);
 
     // Shortcut Key
     const shortcutRow = new Adw.ActionRow({
         title: _('Toggle Shortcut'),
         subtitle: _('Keyboard shortcut to trigger the extension action'),
     });
-    shortcutGroup.add(shortcutRow);
+    actionGroup.add(shortcutRow);
 
     const shortcutArray = settings.get_strv('shortcut');
     const currentShortcut = shortcutArray.length > 0 ? shortcutArray[0] : '';
@@ -30,6 +30,26 @@ export function behaviourPage(window) {
         valign: Gtk.Align.CENTER,
     });
     shortcutRow.add_suffix(shortcutLabel);
+
+    // Left click
+    const clickSetModel = Gtk.StringList.new([_('None'), _('Toggle Theme'), _('Toggle Menu')]);
+
+    const leftSetRow = new Adw.ComboRow({
+        title: _('Left-Click Action'),
+        subtitle: _('Action for left clicking the panel indicator.'),
+        model: clickSetModel,
+    });
+    actionGroup.add(leftSetRow);
+    settings.bind('left-click', leftSetRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+
+    // Right click
+    const rightSetRow = new Adw.ComboRow({
+        title: _('Right-Click Action'),
+        subtitle: _('Action for right clicking the panel indicator.'),
+        model: clickSetModel,
+    });
+    actionGroup.add(rightSetRow);
+    settings.bind('right-click', rightSetRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
 
     // Group: Advanced
     const advanceGroup = new Adw.PreferencesGroup({ title: _('Advanced') });

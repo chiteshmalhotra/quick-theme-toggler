@@ -9,6 +9,6 @@ export default class PanelIconPreferences extends ExtensionPreferences {
 
         window.add(appearancePage(window));
         window.add(behaviourPage(window));
-        window.add(aboutPage(window));
+        window.add(aboutPage(window, this.metadata));
     }
 }

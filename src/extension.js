@@ -16,6 +16,7 @@ const QuickThemeButton = GObject.registerClass(
             this._extension = extension;
 
             // Data structures
+            this.clickActions = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
             this.iconSets = [
                 { light: "weather-clear-symbolic", dark: "weather-clear-night-symbolic", rotate: 40 },
                 { light: "dark-mode-symbolic", dark: "dark-mode-symbolic", rotate: 180 }
@@ -40,6 +41,8 @@ const QuickThemeButton = GObject.registerClass(
             this.iconBox = ["left", "center", "right"][this._settings.get_int("icon-box-enum")] ?? "right";
             this.iconOffset = this._settings.get_int("icon-offset");
             this.forceLight = this._settings.get_boolean("force-light");
+            this.leftClick = this._settings.get_int("left-click");
+            this.rightClick = this._settings.get_int("right-click");
 
             // Component setup
             this.setupIcon();
@@ -78,8 +81,8 @@ const QuickThemeButton = GObject.registerClass(
         }
 
         setupMenu() {
-            this.menu.addAction(_(" Extension Settings"), () => 
-            this._extension.openPreferences(), "preferences-system-symbolic");
+            this.menu.addAction(_(" Extension Settings"), () =>
+                this._extension.openPreferences(), "preferences-system-symbolic");
         }
 
         setupEvents() {
@@ -88,13 +91,12 @@ const QuickThemeButton = GObject.registerClass(
             this._buttonPressEventId = this.connect("button-press-event", (actor, event) => {
                 let button = event.get_button();
 
-                if (button === 1) this.toggleTheme();
-                if (button === 3) this.menu.toggle();
+                if (button === 1) this.clickActions[this.leftClick]();
+                if (button === 3) this.clickActions[this.rightClick]();
 
                 return [1, 3].includes(button) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
             });
         }
-
         setupShortcut() {
             Main.wm.addKeybinding(
                 'shortcut',
@@ -142,6 +144,16 @@ const QuickThemeButton = GObject.registerClass(
             this._forceLightId = this._settings.connect("changed::force-light", () => {
                 this.forceLight = this._settings.get_boolean("force-light");
             });
+
+            // Left click
+            this._leftClickId = this._settings.connect("changed::left-click", () => {
+                this.leftClick = this._settings.get_int("left-click");
+            });
+
+            // Right click
+            this._rightClickId = this._settings.connect("changed::right-click", () => {
+                this.rightClick = this._settings.get_int("right-click");
+            });
         }
 
         toggleTheme() {
@@ -154,6 +166,7 @@ const QuickThemeButton = GObject.registerClass(
             Object.entries({
                 _iconSetId: this._settings, _iconMovId: this._settings, _iconDurId: this._settings,
                 _iconBoxEnumId: this._settings, _iconOffsetId: this._settings, _forceLightId: this._settings,
+                _leftClickId: this._settings, _rightClickId: this._settings,
                 _buttonPressEventId: this, _interfaceId: this._interfaceSettings
             }).forEach(([k, src]) => this[k] && src.disconnect(this[k]));
 
