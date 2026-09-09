@@ -52,7 +52,7 @@ export function appearancePage(window) {
     settings.bind('animate-icon', iconAnimationRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
     // Animation Duration
-    const iconAnimateDurAdj = new Gtk.Adjustment({ lower: 0, upper: 3000, step_increment: 100 });
+    const iconAnimateDurAdj = new Gtk.Adjustment({ lower: 50, upper: 3000, step_increment: 50 });
     const iconAnimateDurationRow = new Adw.SpinRow({
         title: _('Animation Speed'),
         subtitle: _('Set transition duration in milliseconds'),

@@ -13,7 +13,7 @@
 		</key>
 		<key name="animation-speed" type="i">
 			<default>300</default>
-			<range min="0" max="3000"/>
+			<range min="50" max="3000"/>
 		</key>
 		<key name="icon-box-enum" type="i">
 			<default>2</default>
