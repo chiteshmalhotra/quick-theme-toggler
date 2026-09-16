@@ -2,18 +2,15 @@
 <schemalist>
 	<schema id="org.gnome.shell.extensions.quick-theme-toggler" path="/org/gnome/shell/extensions/quick-theme-toggler/">
 		<!-- Appearance -->
-		<key name="show-indicator" type="b">
+		<key name="icon-display" type="b">
 			<default>true</default>
 		</key>
 		<key name="icon-style" type="i">
 			<default>0</default>
 		</key>
-		<key name="animate-icon" type="b">
-			<default>true</default>
-		</key>
-		<key name="animation-speed" type="i">
-			<default>300</default>
-			<range min="50" max="3000"/>
+		<key name="icon-dur" type="i">
+			<default>400</default>
+			<range min="0" max="1000" />
 		</key>
 		<key name="icon-box-enum" type="i">
 			<default>2</default>
@@ -22,9 +19,18 @@
 			<default>1</default>
 			<range min="0" max="16"/>
 		</key>
+		<key name="use-custom-accent" type="b">
+            <default>false</default>
+        </key>
+        <key name="light-accent" type="i">
+            <default>1</default>
+        </key>
+		<key name="dark-accent" type="i">
+            <default>1</default>
+        </key>
 		<!-- Behaviour -->
 		<key name="shortcut" type="as">
-			<default>['&lt;Super&gt;&lt;Shift&gt;t']</default>
+			<default>["&lt;Super&gt;&lt;Shift&gt;t"]</default>
 		</key>
 		<key name="left-click" type="i">
             <default>1</default>
@@ -33,6 +39,9 @@
             <default>2</default>
         </key>
         <key name="force-light" type="b">
+            <default>false</default>
+        </key>
+		<key name="smooth-transition" type="b">
             <default>false</default>
         </key>
 	</schema>

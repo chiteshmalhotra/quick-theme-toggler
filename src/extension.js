@@ -1,12 +1,12 @@
-import St from 'gi://St';
-import Gio from 'gi://Gio';
-import Meta from 'gi://Meta';
-import Shell from 'gi://Shell';
-import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import St from "gi://St";
+import Gio from "gi://Gio";
+import Meta from "gi://Meta";
+import Shell from "gi://Shell";
+import GObject from "gi://GObject";
+import Clutter from "gi://Clutter";
+import * as Main from "resource:///org/gnome/shell/ui/main.js";
+import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
+import { Extension, gettext as _ } from "resource:///org/gnome/shell/extensions/extension.js";
 
 const QuickThemeButton = GObject.registerClass(
     class QuickThemeButton extends PanelMenu.Button {
@@ -17,17 +17,24 @@ const QuickThemeButton = GObject.registerClass(
 
             // Data structures
             this._signals = [];
-            this.clickActions = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
-            this.iconStyles = [
-                { light: "weather-clear-symbolic", dark: "weather-clear-night-symbolic", rotate: 40 },
+            this.getMap = { "i": "get_int", "s": "get_string", "b": "get_boolean" };
+            this.actionMap = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
+            this.accentMap = ["blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"]
+            this.iconStylesMap = [
+                { light: "weather-clear-symbolic", dark: "weather-clear-night-symbolic", rotate: 60 },
                 { light: "dark-mode-symbolic", dark: "dark-mode-symbolic", rotate: 180 }
             ];
             this.settingsMap = {
-                'icon-style': { action: () => this.updateIcon() },
-                'icon-box-enum': { action: () => this.updatePos() },
-                'icon-offset': { action: () => this.updatePos() },
-                'animate-icon': { type: 'bool' }, 'force-light': { type: 'bool' },
-                'animation-speed': {}, 'left-click': {}, 'right-click': {},
+                "icon-display": { get: "b", run: () => (this.visible = this.iconDisplay) },
+                "icon-style": { get: "i", run: () => this.updateIcon() },
+                "icon-dur": { get: "i" },
+                "icon-box-enum": { get: "i", run: () => this.updatePos() },
+                "icon-offset": { get: "i", run: () => this.updatePos() },
+                "left-click": { get: "i" }, "right-click": { get: "i" },
+                "force-light": { get: "b" }, "smooth-transition": { get: "b" },
+                "use-custom-accent" : { get: "b", run: () => this.updateAccent()},
+                "light-accent": { get: "i", run: () => this.updateAccent() },
+                "dark-accent": { get: "i", run: () => this.updateAccent() }
             };
 
             // Settings setup
@@ -35,10 +42,12 @@ const QuickThemeButton = GObject.registerClass(
             this._interfaceSettings = new Gio.Settings({ schema_id: "org.gnome.desktop.interface" });
 
             // Theme connection
-            this.isDark = (this._interfaceSettings.get_string('color-scheme') === 'prefer-dark');
-            const interfaceId = this._interfaceSettings.connect('changed::color-scheme', () => {
-                this.isDark = (this._interfaceSettings.get_string('color-scheme') === 'prefer-dark');
-                this.updateIcon()
+            this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
+            this.updateAccent();
+            const interfaceId = this._interfaceSettings.connect("changed::color-scheme", () => {
+                this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
+                this.updateAccent();
+                this.updateIcon();
             });
             this._signals.push({ source: this._interfaceSettings, id: interfaceId });
 
@@ -57,20 +66,20 @@ const QuickThemeButton = GObject.registerClass(
         }
 
         iconAnimation() {
-            if (!this.animateIcon) return;
-            
-            const rotate = this.iconStyles[this.iconStyle].rotate;
+            if (!this.iconDur) return;
+
+            const rotate = this.iconStylesMap[this.iconStyle].rotate;
             this._icon.rotation_angle_z = rotate * (this.isDark ? -1 : 1);
             this._icon.ease({
                 rotation_angle_z: 0,
-                duration: this.animationSpeed || 300,
+                duration: this.iconDur,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD
             });
         }
 
         updateIcon() { this._icon.icon_name = this.currentIcon(); this.iconAnimation() }
 
-        currentIcon() { return (this.iconStyles[this.iconStyle])[this.isDark ? 'dark' : 'light'] }
+        currentIcon() { return (this.iconStylesMap[this.iconStyle])[this.isDark ? "dark" : "light"] }
 
         setupMenu() {
             this.menu.addAction(_(" Extension Settings"), () =>
@@ -83,8 +92,8 @@ const QuickThemeButton = GObject.registerClass(
             const eventId = this.connect("button-press-event", (actor, event) => {
                 let button = event.get_button();
 
-                if (button === 1) this.clickActions[this.leftClick]();
-                if (button === 3) this.clickActions[this.rightClick]();
+                if (button === 1) this.actionMap[this.leftClick]();
+                if (button === 3) this.actionMap[this.rightClick]();
 
                 return [1, 3].includes(button) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
             });
@@ -92,53 +101,55 @@ const QuickThemeButton = GObject.registerClass(
         }
 
         setupShortcut() {
-            Main.wm?.removeKeybinding('shortcut');
+            Main.wm?.removeKeybinding("shortcut");
 
             Main.wm?.addKeybinding(
-                'shortcut', 
-                this._settings, 
-                Meta.KeyBindingFlags.NONE, 
+                "shortcut",
+                this._settings,
+                Meta.KeyBindingFlags.NONE,
                 Shell.ActionMode.ALL,
                 () => { this.toggleTheme() }
             );
         }
 
         setupSettings() {
-            // Show Indicator
-            this._settings.bind('show-indicator', this, 'visible', Gio.SettingsBindFlags.DEFAULT);
-
-            // Setting map
             for (const [key, config] of Object.entries(this.settingsMap)) {
-                const get = config.type === 'bool' ? 'get_boolean' : 'get_int';
-
+                const getMethod = this.getMap[config.get];
                 const propName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                this[propName] = this._settings[get](key);
+                this[propName] = this._settings[getMethod](key);
 
                 this._signals.push({
                     source: this._settings,
                     id: this._settings.connect(`changed::${key}`, () =>
-                        (this[propName] = this._settings[get](key), config.action?.()))
+                        (this[propName] = this._settings[getMethod](key), config.run?.()))
                 });
             }
         }
 
-        get iconBox() { return ['left', 'center', 'right'].at(this.iconBoxEnum) }
+        get iconBox() { return ["left", "center", "right"].at(this.iconBoxEnum) }
 
         updatePos() {
             const container = this.get_parent();
-            const targetBox = Main.panel['_' + this.iconBox + 'Box'];
+            const targetBox = Main.panel["_" + this.iconBox + "Box"];
             if (!container || !targetBox) return
 
             container.remove_child(this);
             targetBox.insert_child_at_index(this, Math.max(0, this.iconOffset));
         }
 
+        updateAccent() {
+            if (!this.useCustomAccent) return;
+            if (!this._interfaceSettings?.settings_schema?.has_key("accent-color")) return;
+            const accentIndex = this.isDark ? this.darkAccent : this.lightAccent;
+            this._interfaceSettings.set_string("accent-color", this.accentMap[accentIndex]);
+        }
+
         toggleTheme() {
             const defaultScheme = this.forceLight ? "prefer-light" : "default";
             const targetScheme = this.isDark ? defaultScheme : "prefer-dark";
-            
-            Main.layoutManager.screenTransition.run();
+
             this._interfaceSettings.set_string("color-scheme", targetScheme);
+            if (this.smoothTransition) Main.layoutManager.screenTransition.run();
         }
 
         destroy() {

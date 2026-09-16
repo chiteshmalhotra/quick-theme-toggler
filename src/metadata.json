@@ -9,7 +9,7 @@
     "48",
     "50"
   ],
-  "version": 3,
+  "version": 4,
   "settings-schema": "org.gnome.shell.extensions.quick-theme-toggler",
   "url": "https://github.com/chiteshmalhotra/quick-theme-toggler"
 }
