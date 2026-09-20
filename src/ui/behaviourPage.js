@@ -13,15 +13,15 @@ export function behaviourPage(window) {
     behaviourPage.add(actionGroup);
 
     // Shortcut Key
-    const shortcutRow = createShortcutRow(settings, 'shortcut', _("Shortcut"));
+    const shortcutRow = createShortcutRow(window, 'shortcut', _("Shortcut"));
     shortcutRow.subtitle = _("Global shortcut to trigger extension");
     actionGroup.add(shortcutRow);
 
     // Left click
     const clickModel = Gtk.StringList.new([_("Do Nothing"), _("Toggle Theme"), _("Toggle Menu")]);
     const leftSetRow = new Adw.ComboRow({ 
-        title: _("Left Click Action"), 
-        subtitle: _("Action on panel icon left-click"),
+        title: _("Left Mouse Click"),
+        subtitle: _("Action when left mouse click on panel indicator"),
         model: clickModel 
     });
     settings.bind("left-click", leftSetRow, "selected", Gio.SettingsBindFlags.DEFAULT);
@@ -29,8 +29,8 @@ export function behaviourPage(window) {
 
     // Right click
     const rightSetRow = new Adw.ComboRow({ 
-        title: _("Right Click Action"), 
-        subtitle: _("Action on panel icon right-click"),
+        title: _("Right Mouse Click"), 
+        subtitle: _("Action when right mouse click on panel indicator"),
         model: clickModel 
     });
     settings.bind("right-click", rightSetRow, "selected", Gio.SettingsBindFlags.DEFAULT);

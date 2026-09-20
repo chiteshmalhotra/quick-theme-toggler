@@ -4,7 +4,9 @@ import Gtk from 'gi://Gtk';
 import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
 
-export function createSegmentedRow(settings, settingsKey, title, options, isColor = false) {
+export function createSegmentedRow(window, settingsKey, title, options, isColor = false) {
+    const settings = window._settings;
+
     const row = new Adw.ActionRow({ title: _(title), activatable: true });
 
     const box = new Gtk.Box({
@@ -43,16 +45,24 @@ export function createSegmentedRow(settings, settingsKey, title, options, isColo
     return row;
 }
 
+export function createShortcutRow(window, settingsKey, title) {
+    const settings = window._settings;
 
-export function createShortcutRow(settings, settingsKey, title) {
     const row = new Adw.ActionRow({ title: title, activatable: false });
 
-    const button = new Gtk.Button({ valign: Gtk.Align.CENTER, css_classes: ['flat'] });
+    const button = new Gtk.Button({ valign: Gtk.Align.CENTER });
+
+    const reset = new Gtk.Button({
+        icon_name: "user-trash-symbolic",
+        valign: Gtk.Align.CENTER,
+        css_classes: ["destructive-action"],
+        tooltip_text: "Reset Shortcut"
+    });
 
     // labels
     const shortcutLabel = new Gtk.ShortcutLabel({ valign: Gtk.Align.CENTER });
     const disabledLabel = new Gtk.Label({ label: 'Disabled', css_classes: ['dim-label'] });
-    const enterLabel = new Gtk.Label({ label: 'New shortcut...' })
+    const enterLabel = new Gtk.Label({ label: 'New shortcut...' });
 
     // Helpers
     const getAccel = () => {
@@ -63,13 +73,19 @@ export function createShortcutRow(settings, settingsKey, title) {
     const updateButton = (accel) => {
         shortcutLabel.accelerator = accel;
         button.child = accel ? shortcutLabel : disabledLabel;
+
+        const isDefault = settings.get_user_value(settingsKey) === null;
+        reset.visible = !isDefault;
     };
 
     // Initialize
     updateButton(getAccel());
 
-    row.add_suffix(button);
+    // Buttons
+    row.add_suffix(reset);
+    reset.connect('clicked', () => { settings.reset(settingsKey); updateButton(getAccel()) });
 
+    row.add_suffix(button);
     button.connect('clicked', () => {
         button.set_child(enterLabel);
 

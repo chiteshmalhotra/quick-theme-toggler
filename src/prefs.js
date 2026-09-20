@@ -10,12 +10,9 @@ import { aboutPage } from "./ui/aboutPage.js";
 export default class PanelIconPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         // Load Icons
-        const iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
-        const iconsPath = this.dir.get_child("icons").get_path();
-
-        if (!iconTheme.get_search_path().includes(iconsPath)) {
-            iconTheme.add_search_path(iconsPath)
-        }
+        let iconPath = this.dir.get_child("icons").get_path();
+        let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
+        iconTheme.add_search_path(iconPath);
 
         // Load CSS
         const provider = new Gtk.CssProvider();

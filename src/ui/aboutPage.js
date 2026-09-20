@@ -6,7 +6,7 @@ import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensio
 export function aboutPage(window, metadata) {
     const aboutPage = new Adw.PreferencesPage({
         title: _("About"),
-        icon_name: "about-symbolic",
+        icon_name: "heart-symbolic",
     });
 
     const headerGroup = new Adw.PreferencesGroup();
