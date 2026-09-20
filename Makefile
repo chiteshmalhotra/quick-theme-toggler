@@ -20,8 +20,9 @@ build: extension
 install: build
 	@rm -rf $(TARGET_DIR)
 	@mkdir -p $(TARGET_DIR)/schemas
-	@cp $(SRC_DIR)/*.js $(SRC_DIR)/metadata.json $(TARGET_DIR)/ 2>/dev/null || true
+	@cp $(SRC_DIR)/*.js $(SRC_DIR)/*.css $(SRC_DIR)/metadata.json $(TARGET_DIR)/ 2>/dev/null || true
 	@[ -d $(SRC_DIR)/ui ] && cp -r $(SRC_DIR)/ui $(TARGET_DIR)/ || true
+	@[ -d $(SRC_DIR)/icons ] && cp -r $(SRC_DIR)/icons $(TARGET_DIR)/ || true
 	@[ -f LICENSE.txt ] && cp LICENSE.txt $(TARGET_DIR)/ || true
 	@[ -f README.md ] && cp README.md $(TARGET_DIR)/ || true
 	@cp $(SCHEMA_DIR)/*.gschema.xml $(SCHEMA_DIR)/gschemas.compiled $(TARGET_DIR)/schemas/ 2>/dev/null || true

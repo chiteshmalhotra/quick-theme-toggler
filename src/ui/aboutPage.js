@@ -6,7 +6,7 @@ import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensio
 export function aboutPage(window, metadata) {
     const aboutPage = new Adw.PreferencesPage({
         title: _("About"),
-        icon_name: "help-about-symbolic",
+        icon_name: "about-symbolic",
     });
 
     const headerGroup = new Adw.PreferencesGroup();
@@ -53,8 +53,8 @@ export function aboutPage(window, metadata) {
         return row;
     };
 
-    linksGroup.add(createLinkRow(_("Project Repository"), "applications-engineering-symbolic", "Github", "https://github.com/chiteshmalhotra/quick-theme-toggler"));
-    linksGroup.add(createLinkRow(_("License"), "dialog-information-symbolic", "Github", "https://github.com/chiteshmalhotra/quick-theme-toggler/blob/main/LICENSE.txt"));
+    linksGroup.add(createLinkRow(_("Project Repository"), "github-symbolic", "Github", "https://github.com/chiteshmalhotra/quick-theme-toggler"));
+    linksGroup.add(createLinkRow(_("License"), "license-symbolic", "Github", "https://github.com/chiteshmalhotra/quick-theme-toggler/blob/main/LICENSE.txt"));
 
     aboutPage.add(linksGroup);
 

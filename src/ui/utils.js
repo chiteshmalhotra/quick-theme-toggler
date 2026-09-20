@@ -1,39 +1,35 @@
-
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
-export function createSegmentedRow(settings, settingsKey, title, subtitle, options) {
-    const row = new Adw.ActionRow({
-        title: _(title),
-        subtitle: subtitle ? _(subtitle) : null,
-        activatable: true,
-    });
+
+export function createSegmentedRow(settings, settingsKey, title, options, isColor = false) {
+    const row = new Adw.ActionRow({ title: _(title), activatable: true });
 
     const box = new Gtk.Box({
         valign: Gtk.Align.CENTER,
-        css_classes: ['linked']
+        ...(isColor ? { spacing: 8 } : { css_classes: ['linked'] })
     });
 
     let group = null;
     const buttons = [];
     const currentVal = settings.get_int(settingsKey);
 
-    // Add Options
-    options.forEach((color, index) => {
+    options.forEach((key, index) => {
         const btn = new Gtk.ToggleButton({
-            label: color.charAt(0).toUpperCase() + color.slice(1),
             group: group,
             active: index === currentVal,
+            ...(isColor
+                ? { tooltip_text: key, css_classes: ['circular', 'accent-btn', key] }
+                : { label: key }
+            )
         });
 
         if (!group) group = btn;
 
         btn.connect('toggled', () => {
-            if (btn.get_active()) {
-                settings.set_int(settingsKey, index);
-            }
+            if (btn.get_active()) settings.set_int(settingsKey, index)
         });
 
         box.append(btn);
@@ -41,30 +37,22 @@ export function createSegmentedRow(settings, settingsKey, title, subtitle, optio
     });
 
     // Activate
-    row.connect('activated', () => buttons[settings.get_int(settingsKey)].active = true);
+    row.connect('activated', () => buttons[currentVal].active = true);
 
     row.add_suffix(box);
     return row;
 }
 
 
-export function createShortcutRow(settings, settingsKey, title, subtitle) {
-    const row = new Adw.ActionRow({
-        title: title,
-        subtitle: subtitle || null,
-        activatable: false,
-    });
-    
-    const button = new Gtk.Button({ valign: Gtk.Align.CENTER });
+export function createShortcutRow(settings, settingsKey, title) {
+    const row = new Adw.ActionRow({ title: title, activatable: false });
+
+    const button = new Gtk.Button({ valign: Gtk.Align.CENTER, css_classes: ['flat'] });
 
     // labels
     const shortcutLabel = new Gtk.ShortcutLabel({ valign: Gtk.Align.CENTER });
-
-    const disabledLabel = new Gtk.Label({
-        label: 'Disabled',
-        valign: Gtk.Align.CENTER,
-        css_classes: ['dim-label'],
-    });
+    const disabledLabel = new Gtk.Label({ label: 'Disabled', css_classes: ['dim-label'] });
+    const enterLabel = new Gtk.Label({ label: 'New shortcut...' })
 
     // Helpers
     const getAccel = () => {
@@ -83,7 +71,7 @@ export function createShortcutRow(settings, settingsKey, title, subtitle) {
     row.add_suffix(button);
 
     button.connect('clicked', () => {
-        button.set_child(new Gtk.Label({ label: 'New shortcut...' }));
+        button.set_child(enterLabel);
 
         const root = button.get_root();
         if (!root) return;
@@ -94,7 +82,7 @@ export function createShortcutRow(settings, settingsKey, title, subtitle) {
         const signalId = controller.connect('key-pressed', (ctrl, keyval, keycode, state) => {
             const mask = state & Gtk.accelerator_get_default_mod_mask();
             const keyName = Gdk.keyval_name(keyval);
-            
+
             // Cancel (Escape)
             if (keyName === 'Escape') {
                 finishBinding(getAccel());
