@@ -5,12 +5,11 @@
 		<key name="icon-display" type="b">
 			<default>true</default>
 		</key>
-		<key name="icon-style" type="i">
+		<key name="light-icon" type="i">
 			<default>0</default>
 		</key>
-		<key name="icon-dur" type="i">
-			<default>400</default>
-			<range min="0" max="1000" />
+		<key name="dark-icon" type="i">
+			<default>1</default>
 		</key>
 		<key name="icon-box-enum" type="i">
 			<default>2</default>
@@ -26,23 +25,35 @@
             <default>1</default>
         </key>
 		<key name="dark-accent" type="i">
-            <default>1</default>
+            <default>5</default>
+        </key>
+		<key name="smooth-transition" type="b">
+            <default>true</default>
         </key>
 		<!-- Behaviour -->
-		<key name="shortcut" type="as">
+		<key name="theme-shortcut" type="as">
 			<default>["&lt;Super&gt;&lt;Shift&gt;t"]</default>
 		</key>
-		<key name="left-click" type="i">
+		<key name="left" type="i">
             <default>1</default>
         </key>
-		<key name="right-click" type="i">
+		<key name="right" type="i">
             <default>2</default>
         </key>
         <key name="force-light" type="b">
             <default>false</default>
         </key>
-		<key name="smooth-transition" type="b">
+		<!-- Experiment -->
+		<key name="enable-experiment" type="b">
             <default>false</default>
         </key>
+		<key name="icon-rotate" type="i">
+            <default>40</default>
+			<range min="0" max="360" />
+        </key>
+		<key name="icon-dur" type="i">
+			<default>300</default>
+			<range min="0" max="1000" />
+		</key>
 	</schema>
 </schemalist>

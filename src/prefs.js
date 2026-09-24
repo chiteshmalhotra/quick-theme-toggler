@@ -6,6 +6,7 @@ import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/
 import { appearancePage } from "./ui/appearancePage.js";
 import { behaviourPage } from "./ui/behaviourPage.js";
 import { aboutPage } from "./ui/aboutPage.js";
+import { experimentPage } from "./ui/experimentPage.js";
 
 export default class PanelIconPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -26,12 +27,14 @@ export default class PanelIconPreferences extends ExtensionPreferences {
         );
 
         // Set window properties
+        window.default_width = 500;
         window.search_enabled = true;
         window._settings = this.getSettings();
 
         // Add pages
-        window.add(appearancePage(window));
-        window.add(behaviourPage(window));
-        window.add(aboutPage(window, this.metadata));
+        window.add(appearancePage(window._settings));
+        window.add(behaviourPage(window._settings));
+        window.add(aboutPage(this.metadata));
+        window.add(experimentPage(window._settings));
     }
 }

@@ -1,12 +1,11 @@
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
+import Gio from "gi://Gio";
 import Gtk from 'gi://Gtk';
 import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
 
-export function createSegmentedRow(window, settingsKey, title, options, isColor = false) {
-    const settings = window._settings;
-
+export function createSegmentedRow(settings, settingsKey, title, options, isColor = false) {
     const row = new Adw.ActionRow({ title: _(title), activatable: true });
 
     const box = new Gtk.Box({
@@ -45,15 +44,13 @@ export function createSegmentedRow(window, settingsKey, title, options, isColor 
     return row;
 }
 
-export function createShortcutRow(window, settingsKey, title) {
-    const settings = window._settings;
-
+export function createShortcutRow(settings, settingsKey, title) {
     const row = new Adw.ActionRow({ title: title, activatable: false });
 
     const button = new Gtk.Button({ valign: Gtk.Align.CENTER });
 
     const reset = new Gtk.Button({
-        icon_name: "user-trash-symbolic",
+        icon_name: "view-refresh-symbolic",
         valign: Gtk.Align.CENTER,
         css_classes: ["destructive-action"],
         tooltip_text: "Reset Shortcut"
@@ -132,3 +129,15 @@ export function createShortcutRow(window, settingsKey, title) {
 
     return row;
 }
+
+export function createUrlRow(title, iconName, url) {
+    const row = new Adw.ActionRow({
+        title: title, activatable: true, icon_name: iconName,
+        cursor: Gdk.Cursor.new_from_name("pointer", null)
+    });
+
+    row.add_suffix(new Gtk.Image({ icon_name: "adw-external-link-symbolic", valign: Gtk.Align.CENTER }));
+    row.connect("activated", () => Gio.AppInfo.launch_default_for_uri_async(url, null));
+
+    return row;
+};

@@ -1,60 +1,32 @@
 import Adw from "gi://Adw";
-import Gdk from "gi://Gdk";
 import Gtk from "gi://Gtk";
 import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
-export function aboutPage(window, metadata) {
-    const aboutPage = new Adw.PreferencesPage({
-        title: _("About"),
-        icon_name: "heart-symbolic",
-    });
+import { createUrlRow } from "./utils.js";
 
+export function aboutPage(metadata) {
+    const aboutPage = new Adw.PreferencesPage({ title: _("About"), icon_name: "about-symbolic" });
+
+    // Group : Header
     const headerGroup = new Adw.PreferencesGroup();
+
     const headerBox = new Gtk.Box({
-        orientation: Gtk.Orientation.VERTICAL,
-        spacing: 6,
-        margin_top: 12,
-        margin_bottom: 8,
-        halign: Gtk.Align.CENTER,
+        orientation: Gtk.Orientation.VERTICAL, halign: Gtk.Align.CENTER,
+        margin_bottom: 12, margin_top: 12, spacing: 6
     });
 
-    const titleLabel = new Gtk.Label({
-        label: `<span size="x-large"><span weight="bold">Quick Theme Toggler</span> V${metadata.version}</span>`,
-        use_markup: true,
-    });
-    const authorLabel = new Gtk.Label({
-        label: _("Created by Chitesh Malhotra"),
-        css_classes: ["dim-label"],
-    });
+    headerBox.append(new Gtk.Label({ label: _(`Quick Theme Toggler V${metadata.version}`), css_classes: ["title-1"] }));
+    headerBox.append(new Gtk.Label({ label: _("Created by Chitesh Malhotra"), css_classes: ["heading", "dim-label"] }));
 
-    headerBox.append(titleLabel);
-    headerBox.append(authorLabel);
     headerGroup.add(headerBox);
     aboutPage.add(headerGroup);
 
-    const linksGroup = new Adw.PreferencesGroup();
+    // Group : Links
+    const linksGroup = new Adw.PreferencesGroup({});
 
-    const createLinkRow = (title, iconName, buttonLabel, url) => {
-        const row = new Adw.ActionRow({
-            title: title,
-            icon_name: iconName,
-        });
-
-        const button = new Gtk.Button({
-            label: buttonLabel,
-            valign: Gtk.Align.CENTER,
-        });
-        button.connect("clicked", () => {
-            Gtk.show_uri(window, url, Gdk.CURRENT_TIME);
-        });
-
-        row.add_suffix(button);
-        row.set_activatable_widget(button);
-        return row;
-    };
-
-    linksGroup.add(createLinkRow(_("Project Repository"), "github-symbolic", "Github", "https://github.com/chiteshmalhotra/quick-theme-toggler"));
-    linksGroup.add(createLinkRow(_("License"), "license-symbolic", "Github", "https://github.com/chiteshmalhotra/quick-theme-toggler/blob/main/LICENSE.txt"));
+    linksGroup.add(createUrlRow(_("Project Repository"), "github-symbolic", metadata.url));
+    linksGroup.add(createUrlRow(_("Report Bug"), "report-symbolic", `${metadata.url}/issues`));
+    linksGroup.add(createUrlRow(_("License"), "license-symbolic", `${metadata.url}/blob/main/LICENSE.txt`));
 
     aboutPage.add(linksGroup);
 
