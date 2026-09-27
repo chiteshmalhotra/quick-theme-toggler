@@ -16,50 +16,48 @@ const QuickThemeButton = GObject.registerClass(
             this._extension = extension;
 
             // Data structures
-            this.signalMap = [];
-            this.getMap = { "i": "get_int", "s": "get_string", "b": "get_boolean" };
-            this.actionMap = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
-            this.accentMap = ["blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"];
-            this.iconMap = ["weather-clear-symbolic", "weather-clear-night-symbolic", "dark-mode-symbolic"];
-            this.settingsMap = {
-                "icon-display": { get: "b", run: () => (this.visible = this.iconDisplay) },
-                "light-icon": { get: "i", run: () => this.updateIcon() },
-                "dark-icon": { get: "i", run: () => this.updateIcon() },
-                "icon-box-enum": { get: "i", reload: true },
-                "icon-offset": { get: "i", reload: true },
-                "smooth-transition": { get: "b" },
-                "left": { get: "i" }, "right": { get: "i" }, "force-light": { get: "b" },
+            this.signals = [];
+            this.clickActions = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
+            this.iconNames = ["weather-clear-symbolic", "weather-clear-night-symbolic", "dark-mode-symbolic"];
+            this.accentColors = ["blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"];
+            this.prefs = {
+                "icon-display": { get: "b", run: () => this.visible = this.iconDisplay },
+                "light-icon": { run: () => this.updateIcon() },
+                "dark-icon": { run: () => this.updateIcon() },
+                "icon-box-enum": { reload: true }, "icon-offset": { reload: true },
+                "transition": { get: "b" },
+                "left": {}, "right": {}, "force-light": { get: "b" },
                 "use-custom-accent": { get: "b", run: () => this.updateAccent() },
-                "light-accent": { get: "i", run: () => this.updateAccent() },
-                "dark-accent": { get: "i", run: () => this.updateAccent() },
-                "enable-experiment": { get: "b" },
-                "icon-dur": { get: "i" }, "icon-rotate": { get: "i" },
+                "light-accent": { run: () => this.updateAccent() },
+                "dark-accent": { run: () => this.updateAccent() },
+                "enable-experiment": { get: "b" }, "icon-dur": {}, "icon-rotate": {},
             };
 
-            // Settings setup
+            // Settings
             this._settings = this._extension.getSettings();
             this._interfaceSettings = new Gio.Settings({ schema_id: "org.gnome.desktop.interface" });
 
-            // Theme connection
+            // Theme connect
             this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
-            this.updateAccent();
-            const interfaceId = this._interfaceSettings.connect("changed::color-scheme", () => {
-                this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
-                this.updateAccent();
-                this.updateIcon();
+            this.signals.push({
+                source: this._interfaceSettings,
+                id: this._interfaceSettings.connect("changed::color-scheme", () => {
+                    this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
+                    this.updateAccent();
+                    this.updateIcon();
+                })
             });
-            this.signalMap.push({ source: this._interfaceSettings, id: interfaceId });
 
             // Setups
-            this.setupSettings();
+            this.setupPrefs();
             this.setupIcon();
             this.setupMenu();
-            this.setupEvents();
+            this.setupClick();
             this.setupShortcut();
         }
 
         setupIcon() {
-            this._icon = new St.Icon({ icon_name: this.currentIcon(), style_class: "system-status-icon" });
+            this._icon = new St.Icon({ icon_name: this.activeIconName(), style_class: "system-status-icon" });
             this._icon.set_pivot_point(0.5, 0.5);
             this.add_child(this._icon);
         }
@@ -76,50 +74,51 @@ const QuickThemeButton = GObject.registerClass(
             });
         }
 
-        updateIcon() { this._icon.icon_name = this.currentIcon(); this.iconAnimation() }
+        updateIcon() { this._icon.icon_name = this.activeIconName(); this.iconAnimation() }
 
-        currentIcon() { return this.iconMap[this.isDark ? this.darkIcon : this.lightIcon] }
+        activeIconName() { return this.iconNames[this.isDark ? this.darkIcon : this.lightIcon] }
 
         setupMenu() {
-            this.menu.addAction(_("Extension Settings"), () => this._extension.openPreferences())
+            this.menu.addAction(_("Extension Settings"), () => this._extension.openPreferences());
+            this.menu.addAction(_("Hide Indicator"), () => this._settings.set_boolean("icon-display", false))
         }
 
-        setupEvents() {
+        setupClick() {
             this._clickGesture?.set_enabled(false);
 
-            const eventId = this.connect("button-press-event", (actor, event) => {
-                let button = event.get_button();
+            this.signals.push({
+                source: this,
+                id: this.connect("button-press-event", (_, event) => {
+                    const btn = event.get_button();
+                    if (btn === 1) this.clickActions[this.left]();
+                    if (btn === 3) this.clickActions[this.right]();
 
-                if (button === 1) this.actionMap[this.left]();
-                if (button === 3) this.actionMap[this.right]();
+                    return [1, 3].includes(button) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
+                })
+            })
+        }
 
-                return [1, 3].includes(button) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
-            });
-            this.signalMap.push({ source: this, id: eventId });
+        addShortcut(id, run, mode = Shell.ActionMode.ALL) {
+            Main.wm?.removeKeybinding(id);
+            Main.wm?.addKeybinding(id, this._settings, Meta.KeyBindingFlags.NONE, mode, run)
         }
 
         setupShortcut() {
-            Main.wm?.removeKeybinding("theme-shortcut");
-
-            Main.wm?.addKeybinding(
-                "theme-shortcut",
-                this._settings,
-                Meta.KeyBindingFlags.NONE,
-                Shell.ActionMode.ALL,
-                () => { this.toggleTheme() }
-            );
+            this.addShortcut("theme-shortcut", () => this.toggleTheme());
+            this.addShortcut("prefs-shortcut", () => this._extension.openPreferences());
         }
 
-        setupSettings() {
-            for (const [key, config] of Object.entries(this.settingsMap)) {
-                const getMethod = this.getMap[config.get];
-                const propName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                this[propName] = this._settings[getMethod](key);
+        setupPrefs() {
+            for (const [key, config] of Object.entries(this.prefs)) {
+                const getMethod = (config.get === "b" ? "get_boolean" : "get_int");
+                const configName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
-                this.signalMap.push({
+                this[configName] = this._settings[getMethod](key);
+
+                this.signals.push({
                     source: this._settings,
                     id: this._settings.connect(`changed::${key}`, () => {
-                        this[propName] = this._settings[getMethod](key);
+                        this[configName] = this._settings[getMethod](key);
                         config.reload ? this._extension.reload() : config.run?.();
                     })
                 });
@@ -132,7 +131,7 @@ const QuickThemeButton = GObject.registerClass(
             if (!this.useCustomAccent) return;
             if (!this._interfaceSettings?.settings_schema?.has_key("accent-color")) return;
             const accentIndex = this.isDark ? this.darkAccent : this.lightAccent;
-            this._interfaceSettings.set_string("accent-color", this.accentMap[accentIndex]);
+            this._interfaceSettings.set_string("accent-color", this.accentColors[accentIndex]);
         }
 
         toggleTheme() {
@@ -144,12 +143,11 @@ const QuickThemeButton = GObject.registerClass(
         }
 
         destroy() {
-            // Disconnect all tracked signals safely
-            for (const { source, id } of this.signalMap) if (source && id) source.disconnect(id);
-            this.signalMap = [];
+            this.signals.forEach(({ source, id }) => source.disconnect(id));
+            this.signals = [];
 
-            // Remove desktop shortcut binding
-            Main.wm?.removeKeybinding("shortcut");
+            Main.wm.removeKeybinding('theme-shortcut');
+            Main.wm.removeKeybinding('prefs-shortcut');
 
             this._interfaceSettings = null;
             this._settings = null;

@@ -6,15 +6,19 @@ import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensio
 import { createShortcutRow } from "./utils.js";
 
 export function behaviourPage(settings) {
-    const behaviourPage = new Adw.PreferencesPage({ title: _("behaviour"), icon_name: "behaviour-symbolic" });
+    const behaviourPage = new Adw.PreferencesPage({ title: _("Behaviour"), icon_name: "behaviour-symbolic" });
 
     // Group: Shortcut
     const shortcutGroup = new Adw.PreferencesGroup({ title: _("Shortcuts") });
     behaviourPage.add(shortcutGroup);
 
-    // Shortcut Key
-    const themeShortcutRow = createShortcutRow(settings, 'theme-shortcut', _("Toggle Theme"));
+    // Theme Shortcut
+    const themeShortcutRow = createShortcutRow(settings, "theme-shortcut", _("Toggle Theme"));
     shortcutGroup.add(themeShortcutRow);
+
+    // Prefs Shortcut
+    const prefsShortcutRow = createShortcutRow(settings, "prefs-shortcut", _("Open Preferences"));
+    shortcutGroup.add(prefsShortcutRow);
 
     // Group: Mouse
     const mouseGroup = new Adw.PreferencesGroup({ title: _("Mouse") });

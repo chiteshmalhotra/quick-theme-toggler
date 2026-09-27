@@ -6,10 +6,10 @@
     border-radius: 50%;
     outline-offset: 2px;
     background-color: currentColor;
-    transition: 200ms
+    transition: transform 150ms
 }
 
-.accent-btn:not(:checked):hover { transform: scale(1.2) }
+.accent-btn:hover { transform: scale(1.1) }
 
 .accent-btn:checked { outline: 2px solid currentColor }
 

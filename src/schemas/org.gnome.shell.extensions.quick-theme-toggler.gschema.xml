@@ -22,17 +22,20 @@
             <default>false</default>
         </key>
         <key name="light-accent" type="i">
-            <default>1</default>
+            <default>2</default>
         </key>
 		<key name="dark-accent" type="i">
-            <default>5</default>
+            <default>6</default>
         </key>
-		<key name="smooth-transition" type="b">
+		<key name="transition" type="b">
             <default>true</default>
         </key>
 		<!-- Behaviour -->
 		<key name="theme-shortcut" type="as">
 			<default>["&lt;Super&gt;&lt;Shift&gt;t"]</default>
+		</key>
+		<key name="prefs-shortcut" type="as">
+			<default>["&lt;Alt&gt;&lt;Shift&gt;t"]</default>
 		</key>
 		<key name="left" type="i">
             <default>1</default>

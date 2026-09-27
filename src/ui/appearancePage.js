@@ -84,10 +84,10 @@ export function appearancePage(settings) {
 
     // Smooth transition
     const smoothRow = new Adw.SwitchRow({
-        title: _("Smooth Theme Transition"),
+        title: _("Screen Transition"),
         subtitle: _("Animate crossfades when switching theme")
     });
-    settings.bind("smooth-transition", smoothRow, "active", Gio.SettingsBindFlags.DEFAULT);
+    settings.bind("transition", smoothRow, "active", Gio.SettingsBindFlags.DEFAULT);
     advanceGroup.add(smoothRow);
 
     return appearancePage;

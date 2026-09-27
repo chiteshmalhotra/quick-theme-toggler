@@ -140,4 +140,4 @@ export function createUrlRow(title, iconName, url) {
     row.connect("activated", () => Gio.AppInfo.launch_default_for_uri_async(url, null));
 
     return row;
-};
+}
