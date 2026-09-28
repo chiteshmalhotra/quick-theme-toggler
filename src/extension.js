@@ -138,7 +138,7 @@ const QuickThemeButton = GObject.registerClass(
             const defaultScheme = this.forceLight ? "prefer-light" : "default";
             const targetScheme = this.isDark ? defaultScheme : "prefer-dark";
 
-            if (this.smoothTransition) Main.layoutManager.screenTransition.run();
+            if (this.transition) Main.layoutManager.screenTransition.run();
             this._interfaceSettings.set_string("color-scheme", targetScheme);
         }
 
