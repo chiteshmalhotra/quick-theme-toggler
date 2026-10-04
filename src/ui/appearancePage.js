@@ -2,81 +2,125 @@ import Adw from "gi://Adw";
 import Gio from "gi://Gio";
 import Gtk from "gi://Gtk";
 import GObject from "gi://GObject";
-import { gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
-import { createSegmentedRow } from "./utils.js";
+import { getIconTheme } from "../utils/helper.js";
+import { createAccentRow, createBgRow } from "../utils/ui.js";
 
 export function appearancePage(settings) {
-    const appearancePage = new Adw.PreferencesPage({ title: _("Appearance"), icon_name: "appearance-symbolic" });
-
-    // Group: Panel icon
-    const iconGroup = new Adw.PreferencesGroup({ title: _("Indicator") });
-    appearancePage.add(iconGroup);
-
-    // Icon Display
-    const iconDisplayRow = new Adw.SwitchRow({
-        title: _("Show Indicator"),
-        subtitle: _("Toggle panel indicator display")
+    const appearancePage = new Adw.PreferencesPage({
+        title: _("Appearance"),
+        icon_name: "appearance-symbolic"
     });
-    settings.bind("icon-display", iconDisplayRow, "active", Gio.SettingsBindFlags.DEFAULT);
-    iconGroup.add(iconDisplayRow);
 
-    // Light Icon
-    const iconModel = Gtk.StringList.new([_("Sun"), _("Moon"), _("Circle")]);
-    const lightIconRow = new Adw.ComboRow({ title: _("Light Theme Icon"), model: iconModel });
-    settings.bind("light-icon", lightIconRow, "selected", Gio.SettingsBindFlags.DEFAULT);
-    iconDisplayRow.bind_property("active", lightIconRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
-    iconGroup.add(lightIconRow);
+    // Group: bg
+    const bgGroup = new Adw.PreferencesGroup();
+    appearancePage.add(bgGroup);
 
-    // Dark Icon
-    const darkIconRow = new Adw.ComboRow({ title: _("Dark Theme Icon"), model: iconModel });
-    settings.bind("dark-icon", darkIconRow, "selected", Gio.SettingsBindFlags.DEFAULT);
-    iconDisplayRow.bind_property("active", darkIconRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
-    iconGroup.add(darkIconRow);
+    const hbox = new Gtk.Box({
+        orientation: Gtk.Orientation.HORIZONTAL,
+        valign: Gtk.Align.CENTER,
+        halign: Gtk.Align.CENTER,
+        homogeneous: true,
+        spacing: 12,
+        margin_top: 16,
+        margin_bottom: 8,
+        margin_start: 12,
+        margin_end: 12
+    });
 
-    // Sub Group : Position
-    const posGroup = new Adw.PreferencesGroup();
-    appearancePage.add(posGroup);
+    const lightBgRow = createBgRow(settings, "light-bg", "Light");
+    hbox.append(lightBgRow);
 
-    // Position Box
-    const iconPositionRow = createSegmentedRow(settings, "icon-box-enum", _("Panel Region"), ["Left", "Center", "Right"]);
-    iconPositionRow.subtitle = _("Indicator placement within panel");
-    iconDisplayRow.bind_property("active", iconPositionRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
-    posGroup.add(iconPositionRow);
+    const darkBgRow = createBgRow(settings, "dark-bg", "Dark");
+    hbox.append(darkBgRow);
+
+    bgGroup.add(new Adw.PreferencesRow({ activatable: false, child: hbox }));
+
+    // Group: Accent
+    const accentGroup = new Adw.PreferencesGroup();
+    appearancePage.add(accentGroup);
+
+    const accentModel = [
+        _("Blue"), _("Teal"), _("Green"), _("Yellow"), _("Orange"),
+        _("Red"), _("Pink"), _("Purple"), _("Slate")
+    ];
+
+    for (const title of ["Light Accent", "Dark Accent"]) {
+        const row = createAccentRow(
+            settings,
+            title.toLowerCase().replace(" ", "-"),
+            _(title),
+            accentModel
+        );
+        accentGroup.add(row);
+    }
+
+    // Group: Indicator
+    const indicatorGroup = new Adw.PreferencesGroup({ title: _("Indicator") });
+    appearancePage.add(indicatorGroup);
+
+    // Show Indicator
+    const indicatorVisibleRow = new Adw.SwitchRow({
+        title: _("Indicator Visibility"),
+        subtitle: _("Show or Hide panel indicator")
+    });
+    settings.bind("visible", indicatorVisibleRow, "active", Gio.SettingsBindFlags.DEFAULT);
+    indicatorGroup.add(indicatorVisibleRow);
+
+    // Icons
+    const iconRow = new Adw.ComboRow({
+        title: _("Indicator Icon"),
+        subtitle: _("Select icon for panel indicator"),
+        model: Gtk.StringList.new([_("Circle"), _("Sun"), _("Moon")])
+    });
+    settings.bind("icon", iconRow, "selected", Gio.SettingsBindFlags.DEFAULT);
+    indicatorVisibleRow.bind_property("active", iconRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
+    indicatorGroup.add(iconRow);
+
+    // Position region
+    const regionRow = new Adw.ComboRow({
+        title: _("Panel Region"),
+        subtitle: _("Indicator placement within panel"),
+        model: Gtk.StringList.new([_("Left"), _("Center"), _("Right")])
+    });
+    settings.bind("region", regionRow, "selected", Gio.SettingsBindFlags.DEFAULT);
+    indicatorVisibleRow.bind_property("active", regionRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
+    indicatorGroup.add(regionRow);
 
     // Position Offset
     const offsetAdjustment = new Gtk.Adjustment({ lower: 0, upper: 16, step_increment: 1 });
-    const iconOffsetRow = new Adw.SpinRow({
+    const offsetRow = new Adw.SpinRow({
         title: _("Position Offset"),
         subtitle: _("Fine tune position within panel region"),
         adjustment: offsetAdjustment, numeric: true
     });
-    iconDisplayRow.bind_property("active", iconOffsetRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
-    settings.bind("icon-offset", iconOffsetRow, "value", Gio.SettingsBindFlags.DEFAULT);
-    posGroup.add(iconOffsetRow);
+    indicatorVisibleRow.bind_property("active", offsetRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
+    settings.bind("offset", offsetRow, "value", Gio.SettingsBindFlags.DEFAULT);
+    indicatorGroup.add(offsetRow);
 
-    // Group: Accent Color
-    const accentGroup = new Adw.PreferencesGroup({ title: _("Accent Color") });
-    appearancePage.add(accentGroup);
+    // Group: Icon Theme
+    const iconThemeGroup = new Adw.PreferencesGroup({ title: _("Icon Theme") });
+    appearancePage.add(iconThemeGroup);
 
-    // Use custom accent
-    const useCustomAccentRow = new Adw.SwitchRow({
-        title: _("Use Custom Accent"),
-        subtitle: _("Set different accent color based on theme")
+    // Dynamic Icon Theme
+    const dynamicIconThemeRow = new Adw.SwitchRow({
+        title: _("Dynamic Icon Theme"),
+        subtitle: _("Auto switch icon theme with system theme")
     });
-    settings.bind("use-custom-accent", useCustomAccentRow, "active", Gio.SettingsBindFlags.DEFAULT);
-    accentGroup.add(useCustomAccentRow);
+    settings.bind("dynamic-icon-theme", dynamicIconThemeRow, "active", Gio.SettingsBindFlags.DEFAULT);
+    iconThemeGroup.add(dynamicIconThemeRow);
 
-    // Light Accent
-    const accentModal = ["Blue", "Teal", "Green", "Yellow", "Orange", "Red", "Pink", "Purple", "Slate"];
-    const lightAccentRow = createSegmentedRow(settings, "light-accent", _("Light Theme Color"), accentModal, 1);
-    useCustomAccentRow.bind_property("active", lightAccentRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
-    accentGroup.add(lightAccentRow);
+    // Light & Dark icon
+    const iconThemeList = getIconTheme();
+    const iconThemeModel = Gtk.StringList.new(iconThemeList);
 
-    // Dark Accent
-    const darkAccentRow = createSegmentedRow(settings, "dark-accent", _("Dark Theme Color"), accentModal, 1);
-    useCustomAccentRow.bind_property("active", darkAccentRow, "sensitive", GObject.BindingFlags.SYNC_CREATE);
-    accentGroup.add(darkAccentRow);
+    for (const title of ["Light Icon Theme", "Dark Icon Theme"]) {
+        const key = title.toLowerCase().replaceAll(" ", "-");
+        const row = new Adw.ComboRow({ title: title, model: iconThemeModel });
+        settings.bind(key, row, "selected", Gio.SettingsBindFlags.DEFAULT);
+        dynamicIconThemeRow.bind_property("active", row, "sensitive", GObject.BindingFlags.SYNC_CREATE);
+        iconThemeGroup.add(row);
+    }
 
     // Group: Advance
     const advanceGroup = new Adw.PreferencesGroup({ title: _("Advance") });
@@ -84,11 +128,45 @@ export function appearancePage(settings) {
 
     // Smooth transition
     const smoothRow = new Adw.SwitchRow({
-        title: _("Screen Transition"),
-        subtitle: _("Animate crossfades when switching theme")
+        title: _("Smooth Transitions"),
+        subtitle: _("Use smooth crossfades when switching themes")
     });
     settings.bind("transition", smoothRow, "active", Gio.SettingsBindFlags.DEFAULT);
     advanceGroup.add(smoothRow);
+
+    // Force Light Theme
+    const lightRow = new Adw.SwitchRow({
+        title: _("Force Light Appearance"),
+        subtitle: _("Default to light theme instead of system default")
+    });
+    settings.bind("force-light", lightRow, "active", Gio.SettingsBindFlags.DEFAULT);
+    advanceGroup.add(lightRow);
+
+    // Group: Reset
+    const resetGroup = new Adw.PreferencesGroup();
+    appearancePage.add(resetGroup);
+
+    const resetButton = new Gtk.Button({
+        halign: Gtk.Align.CENTER,
+        valign: Gtk.Align.CENTER,
+        margin_top: 16,
+        margin_bottom: 4,
+        css_classes: ["destructive-action", "pill"]
+    });
+
+    const buttonContent = new Adw.ButtonContent({
+        icon_name: "view-refresh-symbolic",
+        label: _(" Reset All Settings"),
+        css_classes: ["heading"]
+    });
+
+    resetButton.set_child(buttonContent);
+
+    resetGroup.add(resetButton);
+
+    resetButton.connect("clicked", () => {
+        settings.list_keys().forEach(key => settings.reset(key))
+    });
 
     return appearancePage;
 }

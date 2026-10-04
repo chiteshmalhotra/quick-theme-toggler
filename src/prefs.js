@@ -2,11 +2,12 @@ import Gtk from "gi://Gtk";
 import Gdk from "gi://Gdk";
 import Gio from "gi://Gio";
 
-import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 import { appearancePage } from "./ui/appearancePage.js";
 import { behaviourPage } from "./ui/behaviourPage.js";
 import { aboutPage } from "./ui/aboutPage.js";
-import { experimentPage } from "./ui/experimentPage.js";
+
+import { ExtensionPreferences, gettext as _ } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
+globalThis._ = _;
 
 export default class PanelIconPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -27,14 +28,13 @@ export default class PanelIconPreferences extends ExtensionPreferences {
         );
 
         // Set window properties
-        window.default_width = 500;
+        window.default_width = 440;
         window.search_enabled = true;
         window._settings = this.getSettings();
-
+        
         // Add pages
         window.add(appearancePage(window._settings));
         window.add(behaviourPage(window._settings));
         window.add(aboutPage(this.metadata));
-        window.add(experimentPage(window._settings));
     }
 }

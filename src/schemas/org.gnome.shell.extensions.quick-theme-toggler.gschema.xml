@@ -1,62 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-	<schema id="org.gnome.shell.extensions.quick-theme-toggler" path="/org/gnome/shell/extensions/quick-theme-toggler/">
-		<!-- Appearance -->
-		<key name="icon-display" type="b">
-			<default>true</default>
-		</key>
-		<key name="light-icon" type="i">
-			<default>0</default>
-		</key>
-		<key name="dark-icon" type="i">
-			<default>1</default>
-		</key>
-		<key name="icon-box-enum" type="i">
-			<default>2</default>
-		</key>
-		<key name="icon-offset" type="i">
-			<default>1</default>
-			<range min="0" max="16"/>
-		</key>
-		<key name="use-custom-accent" type="b">
-            <default>false</default>
+    <schema id="org.gnome.shell.extensions.quick-theme-toggler" path="/org/gnome/shell/extensions/quick-theme-toggler/">
+        <!-- Appearance -->
+        <key name="light-bg" type="s">
+            <default>""</default>
+        </key>
+        <key name="dark-bg" type="s">
+            <default>""</default>
         </key>
         <key name="light-accent" type="i">
-            <default>2</default>
+            <default>0</default>
         </key>
-		<key name="dark-accent" type="i">
-            <default>6</default>
+        <key name="dark-accent" type="i">
+            <default>8</default>
         </key>
-		<key name="transition" type="b">
+        <key name="dynamic-icon-theme" type="b">
+            <default>false</default>
+        </key>
+        <key name="light-icon-theme" type="i">
+            <default>0</default>
+        </key>
+        <key name="dark-icon-theme" type="i">
+            <default>0</default>
+        </key>
+        <key name="visible" type="b">
             <default>true</default>
         </key>
-		<!-- Behaviour -->
-		<key name="theme-shortcut" type="as">
-			<default>["&lt;Super&gt;&lt;Shift&gt;t"]</default>
-		</key>
-		<key name="prefs-shortcut" type="as">
-			<default>["&lt;Alt&gt;&lt;Shift&gt;t"]</default>
-		</key>
-		<key name="left" type="i">
-            <default>1</default>
+        <key name="icon" type="i">
+            <default>0</default>
         </key>
-		<key name="right" type="i">
+        <key name="region" type="i">
             <default>2</default>
+        </key>
+        <key name="offset" type="i">
+            <default>1</default>
+            <range min="0" max="16"/>
+        </key>
+        <key name="transition" type="b">
+            <default>true</default>
         </key>
         <key name="force-light" type="b">
             <default>false</default>
         </key>
-		<!-- Experiment -->
-		<key name="enable-experiment" type="b">
-            <default>false</default>
+
+        <!-- Behavior -->
+        <key name="theme-shortcut" type="as">
+            <default>["&lt;Super&gt;&lt;Shift&gt;t"]</default>
         </key>
-		<key name="icon-rotate" type="i">
-            <default>40</default>
-			<range min="0" max="360" />
+        <key name="prefs-shortcut" type="as">
+            <default>["&lt;Alt&gt;&lt;Shift&gt;t"]</default>
         </key>
-		<key name="icon-dur" type="i">
-			<default>300</default>
-			<range min="0" max="1000" />
-		</key>
-	</schema>
+        <key name="left" type="i">
+            <default>1</default>
+        </key>
+        <key name="right" type="i">
+            <default>2</default>
+        </key>
+    </schema>
 </schemalist>

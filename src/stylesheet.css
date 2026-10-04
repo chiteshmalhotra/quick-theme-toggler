@@ -1,4 +1,4 @@
-.accent-btn {
+.accent {
     padding: 0;
     border: none;
     min-width: 20px;
@@ -9,9 +9,9 @@
     transition: transform 150ms
 }
 
-.accent-btn:hover { transform: scale(1.1) }
+.accent:hover { transform: scale(1.1) }
 
-.accent-btn:checked { outline: 2px solid currentColor }
+.accent:checked { outline: 2px solid currentColor }
 
 .Blue   { color: #3584e4 }
 .Teal   { color: #21a499 }
@@ -22,3 +22,9 @@
 .Pink   { color: #d56199 }
 .Purple { color: #9141ac }
 .Slate  { color: #6f8396 }
+
+.bg-btn, .bg-btn>* { 
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 0px;
+}

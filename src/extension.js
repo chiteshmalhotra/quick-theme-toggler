@@ -8,6 +8,8 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { Extension, gettext as _ } from "resource:///org/gnome/shell/extensions/extension.js";
 
+import { getIconTheme } from "./utils/helper.js";
+
 const QuickThemeButton = GObject.registerClass(
     class QuickThemeButton extends PanelMenu.Button {
 
@@ -17,100 +19,57 @@ const QuickThemeButton = GObject.registerClass(
 
             // Data structures
             this.signals = [];
-            this.clickActions = [() => { }, () => this.toggleTheme(), () => this.menu.toggle()];
-            this.iconNames = ["weather-clear-symbolic", "weather-clear-night-symbolic", "dark-mode-symbolic"];
-            this.accentColors = ["blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"];
+            this.clickActions = [() => { }, () => this.toggleTheme(), () => this.menu.toggle(),
+            () => this._extension.openPreferences()];
+            this.icons = ["dark-mode-symbolic", "weather-clear-symbolic", "weather-clear-night-symbolic"];
+            this.accents = ["blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"];
             this.prefs = {
-                "icon-display": { get: "b", run: () => this.visible = this.iconDisplay },
-                "light-icon": { run: () => this.updateIcon() },
-                "dark-icon": { run: () => this.updateIcon() },
-                "icon-box-enum": { reload: true }, "icon-offset": { reload: true },
-                "transition": { get: "b" },
-                "left": {}, "right": {}, "force-light": { get: "b" },
-                "use-custom-accent": { get: "b", run: () => this.updateAccent() },
+                "light-bg": { get: "s", run: () => this.updateBg() },
+                "dark-bg": { get: "s", run: () => this.updateBg() },
+
                 "light-accent": { run: () => this.updateAccent() },
                 "dark-accent": { run: () => this.updateAccent() },
-                "enable-experiment": { get: "b" }, "icon-dur": {}, "icon-rotate": {},
+
+                "dynamic-icon-theme": { get: "b", run: () => this.iconThemes = getIconTheme() },
+                "light-icon-theme": { get: "i", run: () => this.updateIconTheme() },
+                "dark-icon-theme": { get: "i", run: () => this.updateIconTheme() },
+
+                "visible": { get: "b", run: () => this.visible = this.visible },
+                "icon": { run: () => this._indicatorIcon.icon_name = this.icons[this.icon] },
+                "region": { reload: true },
+                "offset": { reload: true },
+
+                "transition": { get: "b" }, "force-light": { get: "b" },
+
+                "left": {}, "right": {},
             };
 
             // Settings
             this._settings = this._extension.getSettings();
             this._interfaceSettings = new Gio.Settings({ schema_id: "org.gnome.desktop.interface" });
-
-            // Theme connect
-            this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
-            this.signals.push({
-                source: this._interfaceSettings,
-                id: this._interfaceSettings.connect("changed::color-scheme", () => {
-                    this.isDark = (this._interfaceSettings.get_string("color-scheme") === "prefer-dark");
-                    this.updateAccent();
-                    this.updateIcon();
-                })
-            });
+            this._bgSettings = new Gio.Settings({ schema_id: "org.gnome.desktop.background" });
 
             // Setups
             this.setupPrefs();
             this.setupIcon();
             this.setupMenu();
-            this.setupClick();
-            this.setupShortcut();
-        }
+            this.setupEvents();
 
-        setupIcon() {
-            this._icon = new St.Icon({ icon_name: this.activeIconName(), style_class: "system-status-icon" });
-            this._icon.set_pivot_point(0.5, 0.5);
-            this.add_child(this._icon);
-        }
-
-        iconAnimation() {
-            if (!this.enableExperiment) return;
-            if (!this.iconDur && !this.iconRotate) return;
-
-            this._icon.rotation_angle_z = this.iconRotate * (this.isDark ? -1 : 1);
-            this._icon.ease({
-                rotation_angle_z: 0,
-                duration: this.iconDur,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD
+            // Theme connect
+            this.isDark = this._interfaceSettings.get_string("color-scheme") === "prefer-dark";
+            this.signals.push({
+                source: this._interfaceSettings,
+                id: this._interfaceSettings.connect("changed::color-scheme", () => {
+                    this.isDark = this._interfaceSettings.get_string("color-scheme") === "prefer-dark";
+                    this.updateAccent(); this.updateIconTheme(); this.updateBg()
+                })
             });
         }
 
-        updateIcon() { this._icon.icon_name = this.activeIconName(); this.iconAnimation() }
-
-        activeIconName() { return this.iconNames[this.isDark ? this.darkIcon : this.lightIcon] }
-
-        setupMenu() {
-            this.menu.addAction(_("Extension Settings"), () => this._extension.openPreferences());
-            this.menu.addAction(_("Hide Indicator"), () => this._settings.set_boolean("icon-display", false))
-        }
-
-        setupClick() {
-            this._clickGesture?.set_enabled(false);
-
-            this.signals.push({
-                source: this,
-                id: this.connect("button-press-event", (_, event) => {
-                    const btn = event.get_button();
-                    if (btn === 1) this.clickActions[this.left]();
-                    if (btn === 3) this.clickActions[this.right]();
-
-                    return [1, 3].includes(button) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
-                })
-            })
-        }
-
-        addShortcut(id, run, mode = Shell.ActionMode.ALL) {
-            Main.wm?.removeKeybinding(id);
-            Main.wm?.addKeybinding(id, this._settings, Meta.KeyBindingFlags.NONE, mode, run)
-        }
-
-        setupShortcut() {
-            this.addShortcut("theme-shortcut", () => this.toggleTheme());
-            this.addShortcut("prefs-shortcut", () => this._extension.openPreferences());
-        }
-
         setupPrefs() {
+            const getMap = { "b": "get_boolean", "s": "get_string", "i": "get_int" };
             for (const [key, config] of Object.entries(this.prefs)) {
-                const getMethod = (config.get === "b" ? "get_boolean" : "get_int");
+                const getMethod = getMap[config.get] || "get_int";
                 const configName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
                 this[configName] = this._settings[getMethod](key);
@@ -125,13 +84,58 @@ const QuickThemeButton = GObject.registerClass(
             }
         }
 
-        get iconBox() { return ["left", "center", "right"].at(this.iconBoxEnum) }
+        setupIcon() {
+            this._indicatorIcon = new St.Icon({ style_class: "system-status-icon" });
+            this._indicatorIcon.icon_name = this.icons[this.icon];
+            this.add_child(this._indicatorIcon);
+        }
+
+        setupMenu() {
+            this.menu.addAction(_("Extension Settings"), () => this._extension.openPreferences());
+            this.menu.addAction(_("Hide Indicator"), () => this._settings.set_boolean("visible", false))
+        }
+
+        setupEvents() {
+            // Click
+            this._clickGesture?.set_enabled(false);
+            this.signals.push({
+                source: this,
+                id: this.connect("button-press-event", (_, event) => {
+                    const btn = event.get_button();
+                    if (btn === 1) this.clickActions[this.left]();
+                    if (btn === 3) this.clickActions[this.right]();
+
+                    return [1, 3].includes(btn) ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
+                })
+            });
+
+            // Shortcut
+            this.addShortcut("theme-shortcut", () => this.toggleTheme());
+            this.addShortcut("prefs-shortcut", () => this._extension.openPreferences());
+        }
+
+        addShortcut(id, run, mode = Shell.ActionMode.ALL) {
+            Main.wm?.removeKeybinding(id);
+            Main.wm?.addKeybinding(id, this._settings, Meta.KeyBindingFlags.NONE, mode, run);
+        }
 
         updateAccent() {
-            if (!this.useCustomAccent) return;
-            if (!this._interfaceSettings?.settings_schema?.has_key("accent-color")) return;
-            const accentIndex = this.isDark ? this.darkAccent : this.lightAccent;
-            this._interfaceSettings.set_string("accent-color", this.accentColors[accentIndex]);
+            const activeAccent = this.isDark ? this.darkAccent : this.lightAccent;
+            this._interfaceSettings.set_string("accent-color", this.accents[activeAccent]);
+        }
+
+        updateIconTheme() {
+            if (!this.dynamicIconTheme) return;
+
+            const activeIconThemeIdx = this.isDark ? this.darkIconTheme : this.lightIconTheme;
+            const themeName = this.iconThemes[activeIconThemeIdx];
+            this._interfaceSettings.set_string("icon-theme", themeName);
+        }
+
+        updateBg() {
+            const path = this.isDark ? this.darkBg : this.lightBg;
+            const key = this.isDark ? "picture-uri-dark" : "picture-uri";
+            if (path) this._bgSettings.set_string(key, Gio.File.new_for_path(path).get_uri());
         }
 
         toggleTheme() {
@@ -156,11 +160,12 @@ const QuickThemeButton = GObject.registerClass(
     }
 );
 
-export default class QuickThemetogglerExtension extends Extension {
+export default class QuickThemeExtension extends Extension {
 
     enable() {
         this._indicator = new QuickThemeButton(this);
-        Main.panel.addToStatusArea(this.uuid, this._indicator, this._indicator.iconOffset, this._indicator.iconBox);
+        const region = ["left", "center", "right"].at(this._indicator.region);
+        Main.panel.addToStatusArea(this.uuid, this._indicator, this._indicator.offset, region);
     }
 
     disable() {
